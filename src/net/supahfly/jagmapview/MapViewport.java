@@ -7,24 +7,28 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 
 import net.supahfly.jagmapview.world.GameTile;
 import net.supahfly.jagmapview.world.GameWorld;
 import net.supahfly.jagmapview.world.def.Floor;
 import net.supahfly.jagmapview.world.map.TileFlags;
 
-public class MapViewport extends Container implements KeyListener, MouseListener
+public class MapViewport extends Container implements KeyListener, MouseListener, MouseMotionListener
 {
 	private static final long serialVersionUID = -101301056032356846L;
 	private Point center = new Point(3200, 3432);
 	private boolean drawTextures = false;
 	private Point view = null;
+	private Point mouse = null;
 	private int plane = 0;
-	private int size = 16;
+	private int size = 4;
 	private double angle = 0;
 	private final Runtime runtime = Runtime.getRuntime();
-	private boolean modifyBrightness = false;
-	private boolean renderBridgeMode = false;
+	private boolean modifyBrightness = true;
+	private boolean renderBridgeMode = true;
+	private boolean drawInfo = true;
+	private boolean drawDebug = true;
 	
 	public void centerView(Point center)
 	{
@@ -47,9 +51,6 @@ public class MapViewport extends Container implements KeyListener, MouseListener
 				int drawX = (int)(x * Math.cos(angle) - y * Math.sin(angle));
 				int drawY = (int)(x * Math.sin(angle) + y * Math.cos(angle));
 				
-				absX = (int)(absX * Math.cos(angle) - absY * Math.sin(angle));
-				absY = (int)(absX * Math.sin(angle) + absY * Math.cos(angle));
-				
 				renderTile(g, drawX, drawY, lX, lY, absX, absY, plane);
 				//g.setColor(Color.ORANGE);
 				//g.drawString(lX + "," + lY, drawX, drawY);
@@ -57,13 +58,36 @@ public class MapViewport extends Container implements KeyListener, MouseListener
 			}
 		}
 		
-		g.setColor(Color.YELLOW);
-		int y = 15;
-		int usage = (int) ((runtime.totalMemory() - runtime.freeMemory()) / 1024L);
-		g.drawString("Bottom left: " + view + ", plane: " + plane, 5, y);
-		g.drawString("Center: " + center, 5, y += 15);
-		g.drawString("Angle: " + angle + ", size: " + size + ", brightness: " + modifyBrightness + ", drawTextures: " + drawTextures + ", renderBridgeMode: " + renderBridgeMode, 5, y += 15);
-		g.drawString("Memory: " + usage + "k (" + (usage / 1024L) + "MB)", 5, y += 15);
+		if (drawDebug)
+		{
+			g.setColor(Color.YELLOW);
+			int y = 15;
+			int usage = (int) ((runtime.totalMemory() - runtime.freeMemory()) / 1024L);
+			g.drawString("Top left: " + view + ", plane: " + plane, 5, y);
+			g.drawString("Center: " + center, 5, y += 15);
+			g.drawString("Angle: " + angle + ", size: " + size + ", brightness: " + modifyBrightness + ", drawTextures: " + drawTextures + ", renderBridgeMode: " + renderBridgeMode, 5, y += 15);
+			g.drawString("Memory: " + usage + "k (" + (usage / 1024L) + "MB)", 5, y += 15);
+			g.drawString("Mouse: " + mouse, 5, y += 15);
+		}
+		
+		if (mouse != null && drawInfo)
+		{
+			g.setColor(Color.WHITE);
+			int y = getHeight() + 10;
+			GameTile tile = GameWorld.tile(new Position(view.x() + mouse.x(), view.y() - mouse.y(), plane));
+
+			if (tile.underlayID() > 0)
+			{
+				g.drawString("Underlay: " + Floor.cache[tile.underlayID() - 1], 5, y -= 15);
+			}
+			
+			if (tile.overlayID() > 0)
+			{
+				g.drawString("Overlay: " + Floor.cache[tile.overlayID() - 1], 5, y -= 15);
+			}
+			
+			g.drawString(tile + "", 5, y -= 15);
+		}
 	}
 	
 	public void renderTile(Graphics g, int x, int y, int lX, int lY, int absX, int absY, int plane)
@@ -167,12 +191,22 @@ public class MapViewport extends Container implements KeyListener, MouseListener
 				//g.setColor(Color.GREEN);
 				//g.drawString("-", x, y);
 			}
+			
+			if (mouse != null && mouse.equals(new Point(lX, lY)))
+			{
+				g.setColor(new Color(0, 0, 0, 64));
+				g.fillRect(x, y, size, size);
+				g.setColor(new Color(0, 0, 0, 128));
+				g.drawRect(x, y, size - 1, size - 1);
+			}
 		}
 		catch (Exception e)
 		{
 			//e.printStackTrace();
 			g.setColor(Color.BLACK);
 			g.fillRect(x, y, size, size);
+			//g.setColor(Color.DARK_GRAY);
+			//g.drawString("-", x, y);
 		}
 	}
 
@@ -213,25 +247,31 @@ public class MapViewport extends Container implements KeyListener, MouseListener
 			case 'v':
 				renderBridgeMode = !renderBridgeMode;
 				break;
+			case 'i':
+				drawInfo = !drawInfo;
+				break;
+			case 'm':
+				drawDebug = !drawDebug;
+				break;
 		}
 		
 		switch (arg0.getKeyCode())
 		{
 			case KeyEvent.VK_RIGHT:
 			case KeyEvent.VK_D:
-				centerView(center.step(10 - size, 0));
+				centerView(center.step(10 - size + 1, 0));
 				break;
 			case KeyEvent.VK_LEFT:
 			case KeyEvent.VK_A:
-				centerView(center.step(-(10 - size), 0));
+				centerView(center.step(-(10 - size + 1), 0));
 				break;
 			case KeyEvent.VK_DOWN:
 			case KeyEvent.VK_S:
-				centerView(center.step(0, -(10 - size)));
+				centerView(center.step(0, -(10 - size + 1)));
 				break;
 			case KeyEvent.VK_UP:
 			case KeyEvent.VK_W:
-				centerView(center.step(0, 10 - size));
+				centerView(center.step(0, 10 - size + 1));
 				break;
 		}
 		
@@ -257,6 +297,7 @@ public class MapViewport extends Container implements KeyListener, MouseListener
 		//Point click = new Point(arg0.getX() / size, (getHeight() - arg0.getY()) / size);
 		GameTile tile = GameWorld.tile(new Position(view.x() + click.x(), view.y() - click.y(), plane));
 		
+		System.out.println("------");
 		System.out.println("Click: " + click);
 		System.out.println(tile);
 		
@@ -269,8 +310,6 @@ public class MapViewport extends Container implements KeyListener, MouseListener
 		{
 			System.out.println("Overlay: " + Floor.cache[tile.overlayID() - 1]);
 		}
-		
-		System.out.println("------");
 	}
 
 	@Override
@@ -295,5 +334,23 @@ public class MapViewport extends Container implements KeyListener, MouseListener
 	public void mouseReleased(MouseEvent arg0)
 	{
 		
+	}
+
+	@Override
+	public void mouseDragged(MouseEvent arg0)
+	{
+		
+	}
+
+	@Override
+	public void mouseMoved(MouseEvent arg0)
+	{
+		Point m = new Point(arg0.getX() / size, arg0.getY() / size);
+		
+		if (mouse != m)
+		{
+			mouse = m;
+			repaint();
+		}
 	}
 }

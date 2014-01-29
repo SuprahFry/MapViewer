@@ -4,10 +4,10 @@ import java.awt.Color;
 import java.awt.Image;
 import java.awt.image.PixelGrabber;
 import java.io.File;
-import java.util.Collections;
 
 import javax.imageio.ImageIO;
 import javax.swing.JApplet;
+import javax.swing.JFrame;
 
 import net.supahfly.jagmapview.io.fs.IndexedFileSystem;
 import net.supahfly.jagmapview.world.def.Floor;
@@ -17,6 +17,7 @@ import net.supahfly.jagmapview.world.def.MapIndex;
 public class MapViewer extends JApplet implements Runnable
 {
 	private static final long serialVersionUID = 101284373361096694L;
+	private static String[] testFolders = { "../cache/", "./cache/" };
 	private static IndexedFileSystem cache;
 	public static int[] textureAverageColors;
 	public static Image[] textures;
@@ -35,12 +36,42 @@ public class MapViewer extends JApplet implements Runnable
 		setContentPane(loaderPanel);
 		loaderPanel.repaint();
 	}
+	
+	public boolean propogateCacheDirectory()
+	{
+		for (String f : testFolders)
+		{
+			File f2 = new File(f);
+			
+			if (f2.exists() && f2.isDirectory())
+			{
+				folder = f;
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	public static void main(String[] args)
+	{
+		JFrame frame = new JFrame("JMV - Supah Fly");
+		MapViewer viewer = new MapViewer();
+		viewer.init();
+		frame.setContentPane(viewer);
+		frame.setSize(viewer.getWidth(), viewer.getHeight());
+		frame.setMinimumSize(viewer.getSize());
+		frame.pack();
+		frame.setVisible(true);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	}
 
 	@Override
 	public void init()
 	{
 		try
 		{
+			propogateCacheDirectory();
 			gui();
 			new Thread(this).start();
 	    }
@@ -141,7 +172,9 @@ public class MapViewer extends JApplet implements Runnable
 			setContentPane(viewport);
 			addKeyListener(viewport);
 			addMouseListener(viewport);
+			addMouseMotionListener(viewport);
 			viewport.addKeyListener(viewport);
+			viewport.addMouseMotionListener(viewport);
 			viewport.addMouseListener(viewport);
 			viewport.setFocusable(true);
 			viewport.requestFocusInWindow();

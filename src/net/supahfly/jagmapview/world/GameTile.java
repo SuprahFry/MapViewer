@@ -26,7 +26,7 @@ public class GameTile extends Position
 	@Override
 	public String toString()
 	{
-		return super.toString() + " GameTile " + height + ", " + overlayID + ", " + underlayID + " (" + overlayRotation + ", " + overlayClip + ") " + clip + ", " + flags;
+		return super.toString() + " GameTile(height: " + height + ", ol: " + overlayID + ", ul: " + underlayID + " (or: " + overlayRotation + ", oc: " + overlayClip + ") clip: " + clip + ", flag: " + flags + ")";
 	}
 	
 	public void setUnderlayID(int id)
